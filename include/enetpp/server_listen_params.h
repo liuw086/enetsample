@@ -10,7 +10,7 @@ namespace enetpp {
 	template<typename ClientT>
 	class server_listen_params {
 	public:
-		using initialize_client_function = std::function<void(ClientT& client, const char* ip)>;
+		using initialize_client_function = std::function<void(ClientT& client, const char* ip, unsigned short port)>;
 
 	public:
 		size_t _max_client_count;

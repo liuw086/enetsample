@@ -1,0 +1,350 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 48;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0179AA061FCD2E3400A8793E /* enet_socket.hpp in Sources */ = {isa = PBXBuildFile; fileRef = 0179A9FD1FCD2E3300A8793E /* enet_socket.hpp */; };
+		0179AA071FCD2E3400A8793E /* host.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0179A9FE1FCD2E3300A8793E /* host.cpp */; };
+		0179AA081FCD2E3400A8793E /* packet.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0179A9FF1FCD2E3300A8793E /* packet.cpp */; };
+		0179AA091FCD2E3400A8793E /* callbacks.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0179AA001FCD2E3400A8793E /* callbacks.cpp */; };
+		0179AA0A1FCD2E3400A8793E /* compress.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0179AA011FCD2E3400A8793E /* compress.cpp */; };
+		0179AA0B1FCD2E3400A8793E /* list.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0179AA021FCD2E3400A8793E /* list.cpp */; };
+		0179AA0C1FCD2E3400A8793E /* unix.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0179AA031FCD2E3400A8793E /* unix.cpp */; };
+		0179AA0D1FCD2E3400A8793E /* protocol.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0179AA041FCD2E3400A8793E /* protocol.cpp */; };
+		0179AA0E1FCD2E3400A8793E /* peer.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 0179AA051FCD2E3400A8793E /* peer.cpp */; };
+		01C4F9CA1FD12FF800607897 /* main.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 01C4F9C91FD12FF800607897 /* main.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		0179A9E61FCD2DDC00A8793E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0179A9E81FCD2DDC00A8793E /* enetServer */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = enetServer; sourceTree = BUILT_PRODUCTS_DIR; };
+		0179A9F31FCD2E2300A8793E /* server_listen_params.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = server_listen_params.h; path = ../../include/enetpp/server_listen_params.h; sourceTree = "<group>"; };
+		0179A9F41FCD2E2300A8793E /* set_current_thread_name.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = set_current_thread_name.h; path = ../../include/enetpp/set_current_thread_name.h; sourceTree = "<group>"; };
+		0179A9F51FCD2E2300A8793E /* server.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = server.h; path = ../../include/enetpp/server.h; sourceTree = "<group>"; };
+		0179A9F81FCD2E2400A8793E /* server_event.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = server_event.h; path = ../../include/enetpp/server_event.h; sourceTree = "<group>"; };
+		0179A9F91FCD2E2400A8793E /* server_queued_packet.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = server_queued_packet.h; path = ../../include/enetpp/server_queued_packet.h; sourceTree = "<group>"; };
+		0179A9FB1FCD2E2400A8793E /* trace_handler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = trace_handler.h; path = ../../include/enetpp/trace_handler.h; sourceTree = "<group>"; };
+		0179A9FC1FCD2E2400A8793E /* global_state.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = global_state.h; path = ../../include/enetpp/global_state.h; sourceTree = "<group>"; };
+		0179A9FD1FCD2E3300A8793E /* enet_socket.hpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.h; name = enet_socket.hpp; path = ../../src/enet_socket.hpp; sourceTree = "<group>"; };
+		0179A9FE1FCD2E3300A8793E /* host.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = host.cpp; path = ../../src/host.cpp; sourceTree = "<group>"; };
+		0179A9FF1FCD2E3300A8793E /* packet.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = packet.cpp; path = ../../src/packet.cpp; sourceTree = "<group>"; };
+		0179AA001FCD2E3400A8793E /* callbacks.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = callbacks.cpp; path = ../../src/callbacks.cpp; sourceTree = "<group>"; };
+		0179AA011FCD2E3400A8793E /* compress.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = compress.cpp; path = ../../src/compress.cpp; sourceTree = "<group>"; };
+		0179AA021FCD2E3400A8793E /* list.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = list.cpp; path = ../../src/list.cpp; sourceTree = "<group>"; };
+		0179AA031FCD2E3400A8793E /* unix.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = unix.cpp; path = ../../src/unix.cpp; sourceTree = "<group>"; };
+		0179AA041FCD2E3400A8793E /* protocol.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = protocol.cpp; path = ../../src/protocol.cpp; sourceTree = "<group>"; };
+		0179AA051FCD2E3400A8793E /* peer.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = peer.cpp; path = ../../src/peer.cpp; sourceTree = "<group>"; };
+		0179AA1A1FCD666D00A8793E /* enet.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = enet.h; path = ../../include/enet/enet.h; sourceTree = "<group>"; };
+		0179AA1B1FCD666D00A8793E /* protocol.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = protocol.h; path = ../../include/enet/protocol.h; sourceTree = "<group>"; };
+		0179AA1C1FCD666E00A8793E /* unix.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = unix.h; path = ../../include/enet/unix.h; sourceTree = "<group>"; };
+		0179AA1D1FCD666E00A8793E /* types.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = types.h; path = ../../include/enet/types.h; sourceTree = "<group>"; };
+		0179AA1E1FCD666E00A8793E /* callbacks.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = callbacks.h; path = ../../include/enet/callbacks.h; sourceTree = "<group>"; };
+		0179AA1F1FCD666E00A8793E /* list.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = list.h; path = ../../include/enet/list.h; sourceTree = "<group>"; };
+		0179AA201FCD666E00A8793E /* time.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = time.h; path = ../../include/enet/time.h; sourceTree = "<group>"; };
+		0179AA211FCD666E00A8793E /* utility.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = utility.h; path = ../../include/enet/utility.h; sourceTree = "<group>"; };
+		01C4F9C91FD12FF800607897 /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; name = main.cpp; path = ../../src/main.cpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		0179A9E51FCD2DDC00A8793E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0179A9DF1FCD2DDC00A8793E = {
+			isa = PBXGroup;
+			children = (
+				0179AA191FCD661200A8793E /* inc */,
+				0179A9EA1FCD2DDC00A8793E /* enetServer */,
+				0179A9E91FCD2DDC00A8793E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		0179A9E91FCD2DDC00A8793E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				0179A9E81FCD2DDC00A8793E /* enetServer */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		0179A9EA1FCD2DDC00A8793E /* enetServer */ = {
+			isa = PBXGroup;
+			children = (
+				0179AA001FCD2E3400A8793E /* callbacks.cpp */,
+				0179AA011FCD2E3400A8793E /* compress.cpp */,
+				0179A9FE1FCD2E3300A8793E /* host.cpp */,
+				0179AA021FCD2E3400A8793E /* list.cpp */,
+				0179A9FD1FCD2E3300A8793E /* enet_socket.hpp */,
+				0179A9FF1FCD2E3300A8793E /* packet.cpp */,
+				0179AA051FCD2E3400A8793E /* peer.cpp */,
+				0179AA041FCD2E3400A8793E /* protocol.cpp */,
+				0179AA031FCD2E3400A8793E /* unix.cpp */,
+				0179A9FC1FCD2E2400A8793E /* global_state.h */,
+				0179A9F81FCD2E2400A8793E /* server_event.h */,
+				0179A9F31FCD2E2300A8793E /* server_listen_params.h */,
+				0179A9F91FCD2E2400A8793E /* server_queued_packet.h */,
+				0179A9F51FCD2E2300A8793E /* server.h */,
+				0179A9F41FCD2E2300A8793E /* set_current_thread_name.h */,
+				0179A9FB1FCD2E2400A8793E /* trace_handler.h */,
+				01C4F9C91FD12FF800607897 /* main.cpp */,
+			);
+			path = enetServer;
+			sourceTree = "<group>";
+		};
+		0179AA191FCD661200A8793E /* inc */ = {
+			isa = PBXGroup;
+			children = (
+				0179AA1E1FCD666E00A8793E /* callbacks.h */,
+				0179AA1A1FCD666D00A8793E /* enet.h */,
+				0179AA1F1FCD666E00A8793E /* list.h */,
+				0179AA1B1FCD666D00A8793E /* protocol.h */,
+				0179AA201FCD666E00A8793E /* time.h */,
+				0179AA1D1FCD666E00A8793E /* types.h */,
+				0179AA1C1FCD666E00A8793E /* unix.h */,
+				0179AA211FCD666E00A8793E /* utility.h */,
+			);
+			path = inc;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		0179A9E71FCD2DDC00A8793E /* enetServer */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0179A9EF1FCD2DDC00A8793E /* Build configuration list for PBXNativeTarget "enetServer" */;
+			buildPhases = (
+				0179A9E41FCD2DDC00A8793E /* Sources */,
+				0179A9E51FCD2DDC00A8793E /* Frameworks */,
+				0179A9E61FCD2DDC00A8793E /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = enetServer;
+			productName = enetServer;
+			productReference = 0179A9E81FCD2DDC00A8793E /* enetServer */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		0179A9E01FCD2DDC00A8793E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0910;
+				ORGANIZATIONNAME = LiuWei;
+				TargetAttributes = {
+					0179A9E71FCD2DDC00A8793E = {
+						CreatedOnToolsVersion = 9.1;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 0179A9E31FCD2DDC00A8793E /* Build configuration list for PBXProject "enetServer" */;
+			compatibilityVersion = "Xcode 8.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = 0179A9DF1FCD2DDC00A8793E;
+			productRefGroup = 0179A9E91FCD2DDC00A8793E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				0179A9E71FCD2DDC00A8793E /* enetServer */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		0179A9E41FCD2DDC00A8793E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0179AA061FCD2E3400A8793E /* enet_socket.hpp in Sources */,
+				0179AA091FCD2E3400A8793E /* callbacks.cpp in Sources */,
+				0179AA0E1FCD2E3400A8793E /* peer.cpp in Sources */,
+				0179AA0B1FCD2E3400A8793E /* list.cpp in Sources */,
+				0179AA071FCD2E3400A8793E /* host.cpp in Sources */,
+				0179AA0C1FCD2E3400A8793E /* unix.cpp in Sources */,
+				0179AA081FCD2E3400A8793E /* packet.cpp in Sources */,
+				0179AA0A1FCD2E3400A8793E /* compress.cpp in Sources */,
+				01C4F9CA1FD12FF800607897 /* main.cpp in Sources */,
+				0179AA0D1FCD2E3400A8793E /* protocol.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0179A9ED1FCD2DDC00A8793E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "Mac Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
+		0179A9EE1FCD2DDC00A8793E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "Mac Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.12;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = macosx;
+			};
+			name = Release;
+		};
+		0179A9F01FCD2DDC00A8793E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 5Z3RQE949K;
+				HEADER_SEARCH_PATHS = /Users/liuwei/Documents/code/xiaomi/voip/enetsample/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		0179A9F11FCD2DDC00A8793E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 5Z3RQE949K;
+				HEADER_SEARCH_PATHS = /Users/liuwei/Documents/code/xiaomi/voip/enetsample/include;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0179A9E31FCD2DDC00A8793E /* Build configuration list for PBXProject "enetServer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0179A9ED1FCD2DDC00A8793E /* Debug */,
+				0179A9EE1FCD2DDC00A8793E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		0179A9EF1FCD2DDC00A8793E /* Build configuration list for PBXNativeTarget "enetServer" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0179A9F01FCD2DDC00A8793E /* Debug */,
+				0179A9F11FCD2DDC00A8793E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 0179A9E01FCD2DDC00A8793E /* Project object */;
+}
