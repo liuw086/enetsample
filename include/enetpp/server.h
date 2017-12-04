@@ -136,7 +136,7 @@ namespace enetpp {
 
 		void consume_events(
 			std::function<void(ClientT& client)> on_client_connected,
-			std::function<void(unsigned int client_id)> on_client_disconnected,
+			std::function<void(ClientT& client)> on_client_disconnected,
 			std::function<void(ClientT& client, const enet_uint8* data, size_t data_size)> on_client_data_received) {
 
 			if (!_event_queue.empty()) {
@@ -162,8 +162,8 @@ namespace enetpp {
 							
                             auto iter = std::find(_connected_clients.begin(), _connected_clients.end(), e._client);
 							assert(iter != _connected_clients.end());
-							unsigned int client_id = e._client->get_uid();
-                            on_client_disconnected(client_id);
+							// unsigned int client_id = e._client->get_uid();
+                            on_client_disconnected(*e._client);
                             
                             _connected_clients.erase(iter);
 							delete e._client;

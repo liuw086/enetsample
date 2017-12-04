@@ -2,14 +2,47 @@
 #include <string>
 #include <random>
 #include <stdio.h>
+#include <fstream>
 #include "enetpp/server.h"
 #include "enetpp/global_state.h"
+#include "enetpp/trace_handler.h"
 
 using namespace enetpp;
+using namespace std;
+
+typedef enum _SendTaskStatus
+{
+   STATUS_NONE       = 0,  
+   STATUS_SENDING    = 1,  
+   STATUS_RECEIVED   = 2
+} SendTaskStatus;
+
+class SendTask {
+public:
+    std::string _ip;
+    unsigned short _port;
+    string _sendData;
+    clock_t _start;
+    int _timeout;
+    int _status;
+
+public:
+    SendTask(){
+    }
+
+    bool isTimeout(){
+        clock_t now = clock();
+        int duration = (int)((double)(now - _start) / CLOCKS_PER_SEC * 1000);
+        return duration > _timeout;
+    }
+};
 
 class server_client {
 public:
 	unsigned int _uid;
+    std::string _ip;
+    unsigned short _port;
+    string _sendData;
 
 public:
 	server_client()
@@ -29,52 +62,76 @@ private:
     std::unique_ptr<std::thread> server_thread;
     bool s_exit = false;
     std::mutex s_cout_mutex;
-    
+    std::queue<SendTask* > sendTasklist;
 private:
-    trace_handler trace_handler = [&](const std::string& msg) {
-        std::lock_guard<std::mutex> lock(s_cout_mutex);
-        std::cout << "server: " << msg << std::endl;
-    };
+
+    std::function<void(string ip, unsigned short port)> _on_ice_succ;
     
-    std::function<void(server_client& client)> on_client_connected = [&](server_client& client) {
-            std::string rip;
-            unsigned port;
-            server.get_peer_uid(client.get_uid(), rip, port);
-            trace_handler("on_client_connected " + rip + ":" + std::to_string(port));
-//            on_connected(rip, port);
-        
-//            std::string s = "1234567890";
-//            enet_uint8* data = (enet_uint8* )s.c_str();
-//            server.send_packet_to(client.get_uid(), 0, data, s.length(), ENET_PACKET_FLAG_RELIABLE);
-        
-    };
-    std::function<void(unsigned int client_uid)> on_client_disconnected = [&](unsigned int client_uid) {
-        std::string rip;
+    void checkSendTaskOnConnected(server_client& client){
+        std::string ip;
         unsigned port;
-        server.get_peer_uid(client_uid, rip, port);
-        trace_handler("on_client_disconnected " + rip + ":" + std::to_string(port));
-//        on_disconnected(rip, port);
-    };
+        server.get_peer_uid(client.get_uid(), ip, port);
+
+        std::cout << "server: checkSendTaskOnConnected" << ip<< ":"<< port <<"; uid="<< client.get_uid() << std::endl;
+
+        while (!sendTasklist.empty()) {
+            auto st = sendTasklist.front();
+            if( st->isTimeout()){
+                std::cout << "server: sendTask timeout" << st->_ip<< ":"<< st->_port << "; len="<<st->_sendData.length() << std::endl;
+                sendTasklist.pop();
+                delete st;
+            }else if(st->_ip == ip && st->_port == port ){
+                st->_status = STATUS_SENDING;
+                sendTasklist.pop();
+                server.send_packet_to(client.get_uid(), 0, (enet_uint8* )st->_sendData.c_str(), st->_sendData.length(), ENET_PACKET_FLAG_RELIABLE);
+                std::cout << "server: sendTask start send packet" << st->_ip<< ":"<< st->_port << std::endl;
+                delete st;
+                break;
+            }
+        }
+    }
+
+    void checkSendTaskTimeout(){
+
+        while (!sendTasklist.empty()) {
+            auto st = sendTasklist.front();
+            if( st->isTimeout()){
+                std::cout << "server: sendTask timeout " << st->_ip<< ":"<< st->_port << std::endl;
+                sendTasklist.pop();
+                delete st;
+            }
+        }
+    }
     
-    std::function<void(server_client& client, const enet_uint8* data, size_t data_size)> on_client_data_received = [&](server_client& client, const enet_uint8* data, size_t data_size) {
-        std::string rip;
-        unsigned port;
-        server.get_peer_uid(client.get_uid(), rip, port);
-        
-        trace_handler("received packet from client : '" + std::string(reinterpret_cast<const char*>(data), data_size) +"("+std::to_string(data_size)+")" + "' from: " + rip + ":" + std::to_string(port));
-        
-        server.tryDisconnect(client.get_uid());
-        //            server.send_packet_to(client.get_uid(), 0, data, data_size, ENET_PACKET_FLAG_RELIABLE);
-        
-    };
         
     void run_server() {
+        std::function<void(server_client& client)> on_client_connected = [&](server_client& client) {
+            checkSendTaskOnConnected(client);
+        };
+        std::function<void(server_client& client)> on_client_disconnected = [&](server_client& client) {
+            std::cout << "server: on_client_disconnected" << client._ip<< ":"<< client._port << std::endl;
+        };
         
+        std::function<void(server_client& client, const enet_uint8* data, size_t data_size)> on_client_data_received = [&](server_client& client, const enet_uint8* data, size_t data_size) {
+            string filename = "./" + client._ip;
+            std::ofstream o(filename.c_str(), ofstream::app); 
+            o.write((const char*)data, data_size);               
+            flush(o);
+            std::cout << "server: received packet from client" << client._ip<< ":"<< client._port << "; len="<< data_size << std::endl;
+
+            // server.tryDisconnect(client.get_uid());
+            //            server.send_packet_to(client.get_uid(), 0, data, data_size, ENET_PACKET_FLAG_RELIABLE);
+            
+        };
+
+
         while (server.is_listening()) {
             server.consume_events(
                                   on_client_connected,
                                   on_client_disconnected,
                                   on_client_data_received);
+
+            checkSendTaskTimeout();
             if (s_exit) {
                 server.stop_listening();
             }
@@ -91,7 +148,13 @@ public:
         unsigned int next_uid = 0;
         auto init_client_func = [&](server_client& client, const char* ip, unsigned short port) {
             client._uid = next_uid;
+            client._ip = string(ip);
+            client._port = port;
             next_uid++;
+        };
+        auto trace_handler = [&](const std::string& msg) {
+            std::lock_guard<std::mutex> lock(s_cout_mutex);
+            std::cout << "server: " << msg << std::endl;
         };
         server.set_trace_handler(trace_handler);
 
@@ -114,6 +177,26 @@ public:
     void connect(std::string ip, unsigned short port){
         server.tryConnect(ip, port);
     }
+
+    int write(char* buffer, size_t size, std::string ip, unsigned short port){
+
+        SendTask* st = new SendTask;
+        st->_ip = ip;
+        st->_port = port;
+        st->_sendData = string(buffer, size);
+        st->_start = clock();
+        st->_timeout = 5000;
+        st->_status = STATUS_NONE;
+        sendTasklist.push(st);
+        server.tryConnect(ip, port);
+        std::cout << "server: sendTask add" << st->_ip<< ":"<< st->_port << "; dataLen="<< size << std::endl;
+    }
+
+    // void start_ice(std::vector<pair> v;
+    //         std::function<void(string ip, unsigned short port)> on_ice_succ){
+    //     _on_ice_succ = on_ice_succ;
+
+    // }
 
 };
 
