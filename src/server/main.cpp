@@ -35,11 +35,11 @@ int main(int argc, char** argv) {
 
     eSocket.bind(PORT, on_data_received);
     
-    eSocket.connect("127.0.0.1", 8082);
+    eSocket.connect("14.152.35.56", 8080);
 
 
     for(int i = 0; i< 100; i++){
-    	std::cout << " dns: " << milive::RCUtils::DnsReslove("zbuvideo.ks3-cn-beijing.ksyun.com") << std::endl;
+    	// std::cout << " dns: " << milive::RCUtils::DnsReslove("zbuvideo.ks3-cn-beijing.ksyun.com") << std::endl;
     	sleep(3);
     }
     
