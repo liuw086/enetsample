@@ -18,6 +18,9 @@
 #include "global_state.h"
 #include "set_current_thread_name.h"
 #include "trace_handler.h"
+#include "enet/time.h"
+
+using namespace std;
 
 namespace enetpp {
     
@@ -37,8 +40,10 @@ namespace enetpp {
 
 		//mapping of uid to peer so that sending packets to specific peers is safe.
 		std::unordered_map<unsigned int, ENetPeer*> _thread_peer_map;
+		vector<ENetPeer*> _connecting_peers;
 
 		client_ptr_vector _connected_clients;
+		std::mutex _connected_clients_mutex;
 
 		std::queue<server_queued_packet> _packet_queue;
         
@@ -51,9 +56,15 @@ namespace enetpp {
 		std::queue<event_type> _event_queue_copy; //member variable instead of stack variable to prevent mallocs?
 		std::mutex _event_queue_mutex;
 
+		int _last_log_time;
+		bool _is_close_connecting_peer;
+		bool _is_clear_peers;
+
 	public:
 		server() 
 			: _should_exit_thread(false) {
+				_is_close_connecting_peer = false;
+				_is_clear_peers = false;
 		}
 
 		~server() {
@@ -65,18 +76,7 @@ namespace enetpp {
 			assert(_event_queue_copy.empty());
 			assert(_connected_clients.empty());
 		}
-        void get_peer_uid(unsigned int uid, std::string& rip, unsigned& port){
-            auto pi = _thread_peer_map.find(uid);
-            if (pi != _thread_peer_map.end()) {
-                
-                ENetAddress remote = pi->second->address; //远程地址
-                char ip[256];
-                enet_address_get_host_ip(&remote,ip,256);
-                rip = std::string(ip);
-                port = remote.port;
-            }
-        }
-
+        
 		void set_trace_handler(trace_handler handler) {
 			assert(!is_listening()); //must be set before any threads started to be safe
 			_trace_handler = handler;
@@ -106,6 +106,14 @@ namespace enetpp {
 				_thread->join();
 				_thread.release();
 			}
+
+			destroy_all_queued_packets();
+			destroy_all_queued_events();
+			delete_all_connected_clients();
+		}
+
+		void clear_peers() {
+			_is_clear_peers = true;
 
 			destroy_all_queued_packets();
 			destroy_all_queued_events();
@@ -153,7 +161,10 @@ namespace enetpp {
 					auto& e = _event_queue_copy.front();
 					switch (e._event_type) {
 						case ENET_EVENT_TYPE_CONNECT: {
-							_connected_clients.push_back(e._client);
+							{
+								std::lock_guard<std::mutex> lock(_connected_clients_mutex);
+								_connected_clients.push_back(e._client);
+							}
 							on_client_connected(*e._client);
 							break;
 						}
@@ -164,8 +175,11 @@ namespace enetpp {
 							assert(iter != _connected_clients.end());
 							// unsigned int client_id = e._client->get_uid();
                             on_client_disconnected(*e._client);
+                            {
+								std::lock_guard<std::mutex> lock(_connected_clients_mutex);
+								_connected_clients.erase(iter);
+							}
                             
-                            _connected_clients.erase(iter);
 							delete e._client;
 							
 							break;
@@ -187,6 +201,17 @@ namespace enetpp {
 			}
 		}
 
+		bool isPeerConnected(string ip, unsigned short port, unsigned int& uid){
+			std::lock_guard<std::mutex> lock(_connected_clients_mutex);
+			for (auto c : _connected_clients) {
+				if(c->_ip == ip && c->_port == port){
+					uid = c->get_uid();
+					return  true;
+				}
+			}
+			return false;
+		}
+
 		const client_ptr_vector& get_connected_clients() const {
 			return _connected_clients;
 		}
@@ -200,6 +225,12 @@ namespace enetpp {
         
         void tryDisconnect(unsigned int uid){
             _try_disconnect_queue.push(uid);
+        }
+
+        void closeConnectingPeer(){
+        	_is_close_connecting_peer = true;
+        		trace("closeConnectingPeer ;connected=" + std::to_string(_thread_peer_map.size())
+	    			+ ";connecting=" + std::to_string(_connecting_peers.size()));
         }
 
 	private:
@@ -220,7 +251,10 @@ namespace enetpp {
             }
 
 			while (host != nullptr) {
-
+				if(_is_clear_peers){
+					disconnect_all_peers_in_thread();
+					_is_clear_peers = false;
+				}
 				if (_should_exit_thread) {
 					disconnect_all_peers_in_thread();
 					enet_host_destroy(host);
@@ -232,10 +266,31 @@ namespace enetpp {
                     connect_or_disconnect_packets_in_thread(host);
                     send_queued_packets_in_thread();
 					capture_events_in_thread(params, host);
+					checkPeers(host);
 				}
 
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				std::this_thread::sleep_for(std::chrono::milliseconds(2));
 			}
+		}
+		void checkPeers(ENetHost* server){
+            ENetPeer* peer;
+            int peerCount = 0;
+            for (peer = server -> peers; peer < & server -> peers [server -> peerCount]; ++ peer)
+            {
+                if(peer -> state == ENET_PEER_STATE_CONNECTED || peer -> state == ENET_PEER_STATE_CONNECTION_SUCCEEDED){
+                    peerCount++;
+                    if(ENET_TIME_DIFFERENCE(enet_time_get(), peer->lastReceiveTime) > 10 * 1000){
+                    	if(ENET_TIME_DIFFERENCE(enet_time_get(), _last_log_time) > 10 * 1000){
+                    		trace("checkPeers timeout: sumOut=" + std::to_string(peer->totalSentData) +"; sumIn=" + 
+                    			std::to_string(peer->incomingDataTotal) + ";connected=" + std::to_string(_thread_peer_map.size())
+                    			+ ";connecting=" + std::to_string(_connecting_peers.size()));
+                    		_last_log_time = enet_time_get();
+                    	}
+                        // enet_peer_reset(peer);
+                    }
+                }
+            }
+
 		}
 
 		void disconnect_all_peers_in_thread() {
@@ -244,21 +299,35 @@ namespace enetpp {
 				iter.second->data = nullptr;
 			}
 			_thread_peer_map.clear();
+
+			for (auto iter : _connecting_peers) {
+				enet_peer_disconnect_now(iter, 0);
+			}
+			_connecting_peers.clear();
 		}
         void connect_or_disconnect_packets_in_thread(ENetHost* host) {
+        	if(_is_close_connecting_peer){
+	        	_is_close_connecting_peer = false;
+	        	for (auto iter : _connecting_peers) {
+					enet_peer_disconnect_now(iter, 0);
+				}
+				_connecting_peers.clear();
+            }
+
             if (!_try_connect_queue.empty()) {
                 std::lock_guard<std::mutex> lock(_packet_queue_mutex);
                 while (!_try_connect_queue.empty()) {
                     auto qp = _try_connect_queue.front();
                     _try_connect_queue.pop();
-                    ENetPeer *server=enet_host_connect(host, &qp, 3, 0);
-                    if(server == NULL)
+                    ENetPeer *connectingPeer=enet_host_connect(host, &qp, 3, 0);
+                    if(connectingPeer == NULL)
                     {
                         trace("enet_peer_send failed");
                     }else{
                         char ip[256];
                         enet_address_get_host_ip(&qp,ip,256);
                         trace("try connect " + std::string(ip) +":" + std::to_string(qp.port));
+                        _connecting_peers.push_back(connectingPeer);
                     }
                 }
             }
@@ -273,9 +342,12 @@ namespace enetpp {
                         ENetAddress remote = pi->second->address; //远程地址
                         char ip[256];
                         enet_address_get_host_ip(&remote,ip,256);
-                        trace("now disconnect " + std::string(ip) +":" + std::to_string(remote.port));
-                        
+                        trace("now disconnect " + std::string(ip) +":" + std::to_string(remote.port) + ";uid="+ to_string(uid));
                         enet_peer_disconnect_now(pi->second, 0);
+
+                        pi->second->data = nullptr;
+                        _thread_peer_map.erase(pi);
+                        
                     }
                 }
             }
@@ -308,7 +380,7 @@ namespace enetpp {
 
 		void capture_events_in_thread(const listen_params_type& params, ENetHost* host) {
 			//http://lists.cubik.org/pipermail/enet-discuss/2013-September/002240.html
-			enet_host_service(host, 0, 0);
+			enet_host_service(host, 0, 3);
 
 			ENetEvent e;
 			while (enet_host_check_events(host, &e) > 0) {
@@ -348,6 +420,11 @@ namespace enetpp {
 			//there is a chance the first few packets are received on the worker thread when the peer is not 
 			//initialized with data causing them to be discarded.
 
+			auto iter = std::find(_connecting_peers.begin(), _connecting_peers.end(), e.peer);
+			if(iter != _connecting_peers.end()){
+				_connecting_peers.erase(iter);
+			}
+
 			auto client = new ClientT();
 			params._initialize_client_function(*client, peer_ip, e.peer->address.port);
 
@@ -368,6 +445,10 @@ namespace enetpp {
 				auto iter = _thread_peer_map.find(client->get_uid());
 				assert(iter != _thread_peer_map.end());
 				assert(iter->second == e.peer);
+				trace("handle_disconnect_event_in_thread : intransit" + std::to_string(e.peer->reliableDataInTransit) 
+                    		+" ;sumOut=" + std::to_string(e.peer->totalSentData) +"; sumIn=" + std::to_string(e.peer->incomingDataTotal) + "; peersize=" +
+                    		 std::to_string(_thread_peer_map.size()) + "; uid="+ std::to_string(client->get_uid()));
+
 				e.peer->data = nullptr;
 				_thread_peer_map.erase(iter);
 
@@ -401,6 +482,7 @@ namespace enetpp {
 		}
 
 		void delete_all_connected_clients() {
+			std::lock_guard<std::mutex> lock(_connected_clients_mutex);
 			for (auto c : _connected_clients) {
 				delete c;
 			}

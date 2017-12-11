@@ -32,6 +32,26 @@ extern "C"
 #define ENET_VERSION_GET_PATCH(version) ((version)&0xFF)
 #define ENET_VERSION ENET_VERSION_CREATE(ENET_VERSION_MAJOR, ENET_VERSION_MINOR, ENET_VERSION_PATCH)
 
+#define MVP_MU_STR            "mu"
+#define MVP_MU_NUM            0x6d75
+    
+#pragma pack(1)
+    typedef struct mu_head_t
+    {
+        unsigned short     flag;
+        unsigned short     packet_len;
+    }mu_head,*mu_head_ptr;
+    
+    typedef struct mu_svr_head_t
+    {
+        unsigned short     flag;
+        unsigned short     packet_len;
+        unsigned int       client_ip;
+        unsigned short     client_port;
+    }mu_svr_head,*mu_svr_head_ptr;
+    
+#pragma pack()
+
 typedef enet_uint32 ENetVersion;
 
 struct _ENetHost;
@@ -317,6 +337,7 @@ typedef struct _ENetPeer
    enet_uint32   unsequencedWindow [ENET_PEER_UNSEQUENCED_WINDOW_SIZE / 32]; 
    enet_uint32   eventData;
    size_t        totalWaitingData;
+   enet_uint32   totalSentData;
 } ENetPeer;
 
 /** An ENet packet compressor for compressing UDP packets before socket sends or receives.

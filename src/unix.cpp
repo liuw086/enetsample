@@ -56,6 +56,10 @@
 #define MSG_NOSIGNAL 0
 #endif
 
+#include "rc_utils.h"
+#include <string>
+using namespace std;
+
 static enet_uint32 timeBase = 0;
 
 int
@@ -422,44 +426,176 @@ enet_socket_destroy (ENetSocket socket)
       close (socket);
 }
 
+// int
+// enet_socket_send (ENetSocket socket,
+//                   const ENetAddress * address,
+//                   const ENetBuffer * buffers,
+//                   size_t bufferCount)
+// {
+//     struct msghdr msgHdr;
+//     struct sockaddr_in sin;
+//     int sentLength;
+
+//     memset (& msgHdr, 0, sizeof (struct msghdr));
+
+//     if (address != NULL)
+//     {
+//         memset (& sin, 0, sizeof (struct sockaddr_in));
+
+//         sin.sin_family = AF_INET;
+//         sin.sin_port = ENET_HOST_TO_NET_16 (address -> port);
+//         sin.sin_addr.s_addr = address -> host;
+
+//         msgHdr.msg_name = & sin;
+//         msgHdr.msg_namelen = sizeof (struct sockaddr_in);
+//     }
+
+//     msgHdr.msg_iov = (struct iovec *) buffers;
+//     msgHdr.msg_iovlen = bufferCount;
+
+//     sentLength = sendmsg (socket, & msgHdr, MSG_NOSIGNAL);
+    
+//     if (sentLength == -1)
+//     {
+//        if (errno == EWOULDBLOCK)
+//          return 0;
+
+//        return -1;
+//     }
+
+//     return sentLength;
+// }
+
+// int
+// enet_socket_receive (ENetSocket socket,
+//                      ENetAddress * address,
+//                      ENetBuffer * buffers,
+//                      size_t bufferCount)
+// {
+//     struct msghdr msgHdr;
+//     struct sockaddr_in sin;
+//     int recvLength;
+
+//     memset (& msgHdr, 0, sizeof (struct msghdr));
+
+//     if (address != NULL)
+//     {
+//         msgHdr.msg_name = & sin;
+//         msgHdr.msg_namelen = sizeof (struct sockaddr_in);
+//     }
+
+//     msgHdr.msg_iov = (struct iovec *) buffers;
+//     msgHdr.msg_iovlen = bufferCount;
+
+//     recvLength = recvmsg (socket, & msgHdr, MSG_NOSIGNAL);
+
+//     if (recvLength == -1)
+//     {
+//        if (errno == EWOULDBLOCK)
+//          return 0;
+
+//        return -1;
+//     }
+
+// #ifdef HAS_MSGHDR_FLAGS
+//     if (msgHdr.msg_flags & MSG_TRUNC)
+//       return -1;
+// #endif
+
+//     if (address != NULL)
+//     {
+//         address -> host = (enet_uint32) sin.sin_addr.s_addr;
+//         address -> port = ENET_NET_TO_HOST_16 (sin.sin_port);
+//     }
+
+//     return recvLength;
+// }
+
+int
+enet_socket_send2 (ENetSocket socket,
+                  const ENetAddress * address,
+                  const ENetBuffer * buffers,
+                  size_t bufferCount, bool doublesend)
+{
+    struct msghdr msgHdr;
+    struct sockaddr_in sin;
+    int sentLength;
+    
+    memset (& msgHdr, 0, sizeof (struct msghdr));
+    
+    if (address != NULL)
+    {
+        memset (& sin, 0, sizeof (struct sockaddr_in));
+        
+        sin.sin_family = AF_INET;
+        sin.sin_port = ENET_HOST_TO_NET_16 (address -> port);
+        sin.sin_addr.s_addr = address -> host;
+        
+        msgHdr.msg_name = & sin;
+        msgHdr.msg_namelen = sizeof (struct sockaddr_in);
+    }
+    
+    msgHdr.msg_iov = (struct iovec *) buffers;
+    msgHdr.msg_iovlen = bufferCount;
+    
+    int dataLen = 0;
+    for (int i = 0; i < bufferCount; i++) {
+        dataLen += buffers[i].dataLength;
+    }
+    
+    char send_buf[1440];
+    int headerLen = sizeof(mu_head_t);
+    struct mu_head_t header;
+    header.flag = htons(MVP_MU_NUM);
+    header.packet_len = htons(dataLen + headerLen);
+    
+    memcpy(send_buf, &header, headerLen);
+    
+    int offset = headerLen;
+    for (int i = 0; i < bufferCount; i++) {
+        
+        memcpy(send_buf + offset, buffers[i].data, buffers[i].dataLength);
+        offset += buffers[i].dataLength;
+    }
+    
+    if(dataLen < 50){
+        int rand_number = ( rand() % RANM_MAX_LEN ) + 5;
+        string rand_str;
+        milive::RCUtils::rand_char( rand_number, rand_str );
+        memcpy( send_buf + dataLen + headerLen, rand_str.c_str(), rand_str.length() );
+
+        offset += rand_str.length();
+        // LOGGER(LOG_DEBUG," rand : %d; dataLen=%d", rand_str.length(), dataLen);
+    }
+
+
+
+    sentLength = sendto(socket, send_buf,offset,0,(struct sockaddr*)&sin,sizeof(sin));
+    if(doublesend){
+        sentLength = sendto(socket, send_buf,offset,0,(struct sockaddr*)&sin,sizeof(sin));
+    }
+    
+    
+    //    sentLength = sendmsg (socket, & msgHdr, MSG_NOSIGNAL);
+    
+    if (sentLength == -1)
+    {
+        if (errno == EWOULDBLOCK)
+            return 0;
+        
+        return -1;
+    }
+    
+    return sentLength;
+}
+
 int
 enet_socket_send (ENetSocket socket,
                   const ENetAddress * address,
                   const ENetBuffer * buffers,
                   size_t bufferCount)
 {
-    struct msghdr msgHdr;
-    struct sockaddr_in sin;
-    int sentLength;
-
-    memset (& msgHdr, 0, sizeof (struct msghdr));
-
-    if (address != NULL)
-    {
-        memset (& sin, 0, sizeof (struct sockaddr_in));
-
-        sin.sin_family = AF_INET;
-        sin.sin_port = ENET_HOST_TO_NET_16 (address -> port);
-        sin.sin_addr.s_addr = address -> host;
-
-        msgHdr.msg_name = & sin;
-        msgHdr.msg_namelen = sizeof (struct sockaddr_in);
-    }
-
-    msgHdr.msg_iov = (struct iovec *) buffers;
-    msgHdr.msg_iovlen = bufferCount;
-
-    sentLength = sendmsg (socket, & msgHdr, MSG_NOSIGNAL);
-    
-    if (sentLength == -1)
-    {
-       if (errno == EWOULDBLOCK)
-         return 0;
-
-       return -1;
-    }
-
-    return sentLength;
+    return enet_socket_send2(socket, address, buffers, bufferCount, false);
 }
 
 int
@@ -471,42 +607,53 @@ enet_socket_receive (ENetSocket socket,
     struct msghdr msgHdr;
     struct sockaddr_in sin;
     int recvLength;
-
+    
     memset (& msgHdr, 0, sizeof (struct msghdr));
-
+    
     if (address != NULL)
     {
         msgHdr.msg_name = & sin;
         msgHdr.msg_namelen = sizeof (struct sockaddr_in);
     }
-
+    
     msgHdr.msg_iov = (struct iovec *) buffers;
     msgHdr.msg_iovlen = bufferCount;
-
-    recvLength = recvmsg (socket, & msgHdr, MSG_NOSIGNAL);
-
+    
+    recvLength = recvmsg (socket, & msgHdr, MSG_DONTWAIT);
+    
     if (recvLength == -1)
     {
-       if (errno == EWOULDBLOCK)
-         return 0;
-
-       return -1;
+        if (errno == EWOULDBLOCK)
+            return 0;
+        
+        return -1;
     }
-
-#ifdef HAS_MSGHDR_FLAGS
-    if (msgHdr.msg_flags & MSG_TRUNC)
-      return -1;
-#endif
-
+    
+    int headerLen = sizeof(mu_head_t);
+    mu_head_t *header = (mu_head_t *) buffers->data;
+    // memcpy(header , buffers->data, headerLen);
+    
+    char* data = (char*)(buffers->data);
+    int dataLen = ntohs(header->packet_len) - headerLen;
+    memcpy(data, data + headerLen, dataLen);
+    data[dataLen] = '\0';
+    
+    buffers->dataLength = dataLen;
+    
+    
+// #ifdef HAS_MSGHDR_FLAGS
+//     if (msgHdr.msg_flags & MSG_TRUNC)
+//         return -1;
+// #endif
+    
     if (address != NULL)
     {
         address -> host = (enet_uint32) sin.sin_addr.s_addr;
         address -> port = ENET_NET_TO_HOST_16 (sin.sin_port);
     }
-
-    return recvLength;
+    
+    return dataLen;
 }
-
 int
 enet_socketset_select (ENetSocket maxSocket, ENetSocketSet * readSet, ENetSocketSet * writeSet, enet_uint32 timeout)
 {

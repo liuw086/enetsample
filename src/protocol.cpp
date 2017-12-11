@@ -425,7 +425,7 @@ static int
 enet_protocol_handle_send_reliable (ENetHost * host, ENetPeer * peer, const ENetProtocol * command, enet_uint8 ** currentData)
 {
     size_t dataLength;
-
+    peer -> lastReceiveTime = host -> serviceTime;
     if (command -> header.channelID >= peer -> channelCount ||
         (peer -> state != ENET_PEER_STATE_CONNECTED && peer -> state != ENET_PEER_STATE_DISCONNECT_LATER))
       return -1;
@@ -524,7 +524,7 @@ enet_protocol_handle_send_fragment (ENetHost * host, ENetPeer * peer, const ENet
     enet_uint16 startWindow, currentWindow;
     ENetListIterator currentCommand;
     ENetIncomingCommand * startCommand = NULL;
-
+    peer -> lastReceiveTime = host -> serviceTime;
     if (command -> header.channelID >= peer -> channelCount ||
         (peer -> state != ENET_PEER_STATE_CONNECTED && peer -> state != ENET_PEER_STATE_DISCONNECT_LATER))
       return -1;
@@ -1730,6 +1730,7 @@ enet_protocol_send_outgoing_commands (ENetHost * host, ENetEvent * event, int ch
           return -1;
 
         host -> totalSentData += sentLength;
+        currentPeer -> totalSentData += sentLength;
         host -> totalSentPackets ++;
     }
    

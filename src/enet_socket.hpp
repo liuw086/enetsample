@@ -3,9 +3,12 @@
 #include <random>
 #include <stdio.h>
 #include <fstream>
+#include <vector>
+#include <utility>
 #include "enetpp/server.h"
 #include "enetpp/global_state.h"
 #include "enetpp/trace_handler.h"
+#include "rc_utils.h"
 
 using namespace enetpp;
 using namespace std;
@@ -22,7 +25,7 @@ public:
     std::string _ip;
     unsigned short _port;
     string _sendData;
-    clock_t _start;
+    unsigned _start;
     int _timeout;
     int _status;
 
@@ -31,8 +34,8 @@ public:
     }
 
     bool isTimeout(){
-        clock_t now = clock();
-        int duration = (int)((double)(now - _start) / CLOCKS_PER_SEC * 1000);
+        unsigned now = milive::RCUtils::getCurrentTime();
+        int duration = now - _start;
         return duration > _timeout;
     }
 };
@@ -42,7 +45,7 @@ public:
 	unsigned int _uid;
     std::string _ip;
     unsigned short _port;
-    string _sendData;
+    
 
 public:
 	server_client()
@@ -55,73 +58,128 @@ public:
 };
 
 class EnetSocket {
-public:
     
 private:
     enetpp::server<server_client> server;
     std::unique_ptr<std::thread> server_thread;
     bool s_exit = false;
     std::mutex s_cout_mutex;
-    std::queue<SendTask* > sendTasklist;
+    vector<SendTask* > sendTasklist;
+
+    vector<pair<string, unsigned short>> _ice_addr_list;
+    unsigned _ice_start;
+    int _ice_timeout;
+
 private:
 
     std::function<void(string ip, unsigned short port)> _on_ice_succ;
-    
+    std::function<void()> _on_ice_timeout;
+    std::function<void(string ip, unsigned short port, const char* data, size_t data_size)> _on_data_received;
+    std::function<void(const std::string& msg)> trace_handler = [&](const std::string& msg) {
+        std::lock_guard<std::mutex> lock(s_cout_mutex);
+        std::cout << milive::RCUtils::getCurrentTimeStr() << " server: " << msg << std::endl;
+    };
+
+    bool isIceTimeout(){
+        unsigned now = milive::RCUtils::getCurrentTime();
+        int duration = now - _ice_start;
+        return duration > _ice_timeout;
+    }
+
     void checkSendTaskOnConnected(server_client& client){
-        std::string ip;
-        unsigned port;
-        server.get_peer_uid(client.get_uid(), ip, port);
+        if(sendTasklist.empty()){
+            return;
+        }
 
-        std::cout << "server: checkSendTaskOnConnected" << ip<< ":"<< port <<"; uid="<< client.get_uid() << std::endl;
-
-        while (!sendTasklist.empty()) {
-            auto st = sendTasklist.front();
-            if( st->isTimeout()){
-                std::cout << "server: sendTask timeout" << st->_ip<< ":"<< st->_port << "; len="<<st->_sendData.length() << std::endl;
-                sendTasklist.pop();
-                delete st;
-            }else if(st->_ip == ip && st->_port == port ){
+        SendTask* st = NULL;
+        vector<SendTask* >::iterator iter1 = sendTasklist.begin();
+        vector<SendTask* >::iterator end = sendTasklist.end();
+        for (; iter1 != end;)
+        {
+            vector<SendTask* >::iterator cur = iter1++;
+            st = (SendTask *)*cur;
+            if (NULL != st && !st->isTimeout() && st->_ip == client._ip && st->_port == client._port)
+            {
                 st->_status = STATUS_SENDING;
-                sendTasklist.pop();
                 server.send_packet_to(client.get_uid(), 0, (enet_uint8* )st->_sendData.c_str(), st->_sendData.length(), ENET_PACKET_FLAG_RELIABLE);
-                std::cout << "server: sendTask start send packet" << st->_ip<< ":"<< st->_port << std::endl;
+                std::cout << "server: sendTask start send packet" << st->_ip<< ":"<< st->_port << "; len="<< st->_sendData.length() <<"; list="<< sendTasklist.size() << std::endl;
+                sendTasklist.erase(cur);
                 delete st;
+            }
+        }
+        
+    }
+
+    void checkIceOnConnected(server_client& client){
+        if(!isIceing()){
+            return;
+        }
+        std::string ip = client._ip;
+        unsigned port = client._port;
+        bool is_succ = false;
+        for(auto addr : _ice_addr_list){
+            if(addr.first == ip && addr.second == port){
+                is_succ = true;
+                trace_handler("ice ok:" +ip +":"+to_string(port));
+                if(_on_ice_succ != NULL){
+                    _on_ice_succ(ip, port);
+                }
                 break;
             }
         }
     }
 
-    void checkSendTaskTimeout(){
+    void checkSendTaskAndIceTimeout(){
+        if(isIceing() && isIceTimeout()){
+            server.closeConnectingPeer();
 
-        while (!sendTasklist.empty()) {
-            auto st = sendTasklist.front();
-            if( st->isTimeout()){
-                std::cout << "server: sendTask timeout " << st->_ip<< ":"<< st->_port << std::endl;
-                sendTasklist.pop();
+            vector<pair<string, unsigned short>> empty;
+            std::swap( _ice_addr_list, empty );
+            trace_handler("server: ice timeout ");
+            _ice_start = 0;
+            if(_on_ice_timeout != NULL){
+                _on_ice_timeout();
+            }
+        }
+
+        if(sendTasklist.empty()){
+            return;
+        }
+
+        SendTask* st = NULL;
+        vector<SendTask* >::iterator iter1 = sendTasklist.begin();
+        vector<SendTask* >::iterator end = sendTasklist.end();
+        for (; iter1 != end;)
+        {
+            vector<SendTask* >::iterator cur = iter1++;
+            st = (SendTask *)*cur;
+            if (NULL != st && st->isTimeout())
+            {
+                std::cout << "server: sendTask timeout" << st->_ip<< ":"<< st->_port << "; list="<< sendTasklist.size() << std::endl;
+                sendTasklist.erase(cur);
                 delete st;
+                server.closeConnectingPeer();
             }
         }
     }
     
         
     void run_server() {
-        std::function<void(server_client& client)> on_client_connected = [&](server_client& client) {
+        auto on_client_connected = [&](server_client& client) {
+            std::cout << "server: OnConnected" << client._ip << ":"<< client._port <<"; uid="<< client.get_uid() <<  "; sendtasksize="<< sendTasklist.size() << std::endl;
             checkSendTaskOnConnected(client);
+            checkIceOnConnected(client);
         };
-        std::function<void(server_client& client)> on_client_disconnected = [&](server_client& client) {
+
+        auto on_client_disconnected = [&](server_client& client) {
             std::cout << "server: on_client_disconnected" << client._ip<< ":"<< client._port << std::endl;
         };
         
-        std::function<void(server_client& client, const enet_uint8* data, size_t data_size)> on_client_data_received = [&](server_client& client, const enet_uint8* data, size_t data_size) {
-            string filename = "./" + client._ip;
-            std::ofstream o(filename.c_str(), ofstream::app); 
-            o.write((const char*)data, data_size);               
-            flush(o);
+        auto on_client_data_received = [&](server_client& client, const enet_uint8* data, size_t data_size) {
             std::cout << "server: received packet from client" << client._ip<< ":"<< client._port << "; len="<< data_size << std::endl;
-
-            // server.tryDisconnect(client.get_uid());
-            //            server.send_packet_to(client.get_uid(), 0, data, data_size, ENET_PACKET_FLAG_RELIABLE);
-            
+            if(_on_data_received != NULL){
+                _on_data_received(client._ip, client._port, (const char*)data, data_size);
+            }
         };
 
 
@@ -131,12 +189,12 @@ private:
                                   on_client_disconnected,
                                   on_client_data_received);
 
-            checkSendTaskTimeout();
+            checkSendTaskAndIceTimeout();
             if (s_exit) {
                 server.stop_listening();
             }
             
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
         }
     }
 public:
@@ -144,7 +202,11 @@ public:
         enetpp::global_state::get().initialize();
         enetpp::server<server_client> server;
     }
-    void bind(unsigned short port){
+    void bind(unsigned short port,
+        std::function<void(string ip, unsigned short port, const char* data, size_t data_size)> on_data_received = NULL){
+
+        _on_data_received = on_data_received;
+
         unsigned int next_uid = 0;
         auto init_client_func = [&](server_client& client, const char* ip, unsigned short port) {
             client._uid = next_uid;
@@ -152,10 +214,10 @@ public:
             client._port = port;
             next_uid++;
         };
-        auto trace_handler = [&](const std::string& msg) {
-            std::lock_guard<std::mutex> lock(s_cout_mutex);
-            std::cout << "server: " << msg << std::endl;
-        };
+        // auto trace_handler = [&](const std::string& msg) {
+        //     std::lock_guard<std::mutex> lock(s_cout_mutex);
+        //     std::cout << "server: " << msg << std::endl;
+        // };
         server.set_trace_handler(trace_handler);
 
         server.start_listening(enetpp::server_listen_params<server_client>()
@@ -179,24 +241,72 @@ public:
     }
 
     int write(char* buffer, size_t size, std::string ip, unsigned short port){
+        unsigned int uid;
+        bool isConnected = server.isPeerConnected(ip, port, uid);
+        if(isConnected){
+            // st->_status = STATUS_SENDING;
+            server.send_packet_to(uid, 0, (enet_uint8* )buffer, size, ENET_PACKET_FLAG_RELIABLE);
+            std::cout << "server: write hasConnected Peer send packet" << ip<< ":"<< port << "; len="<<size << "; list="<< sendTasklist.size() << std::endl;
+        }else{
+            SendTask* st = new SendTask;
+            st->_ip = ip;
+            st->_port = port;
+            st->_sendData = string(buffer, size);
+            st->_start = milive::RCUtils::getCurrentTime();
+            st->_timeout = 5000;
+            st->_status = STATUS_NONE;
+            sendTasklist.push_back(st);
+            server.tryConnect(ip, port);
+            std::cout << "server: sendTask add" << st->_ip<< ":"<< st->_port << "; dataLen="<< size << std::endl;
+        }
 
-        SendTask* st = new SendTask;
-        st->_ip = ip;
-        st->_port = port;
-        st->_sendData = string(buffer, size);
-        st->_start = clock();
-        st->_timeout = 5000;
-        st->_status = STATUS_NONE;
-        sendTasklist.push(st);
-        server.tryConnect(ip, port);
-        std::cout << "server: sendTask add" << st->_ip<< ":"<< st->_port << "; dataLen="<< size << std::endl;
+
+        
+        return size;
     }
 
-    // void start_ice(std::vector<pair> v;
-    //         std::function<void(string ip, unsigned short port)> on_ice_succ){
-    //     _on_ice_succ = on_ice_succ;
+    void start_ice(vector<std::pair<string, unsigned short>> addr_list, int timeout, 
+        std::function<void(string ip, unsigned short port)> on_ice_succ, std::function<void()> on_ice_timeout = NULL){
 
-    // }
+        _ice_start = milive::RCUtils::getCurrentTime();
+        _ice_timeout = timeout;
+        _on_ice_succ = on_ice_succ;
+        _on_ice_timeout = on_ice_timeout;
+        bool isConnected = false;
+        unsigned int uid;
 
+        for(auto addr : addr_list){
+            isConnected = server.isPeerConnected(addr.first, addr.second, uid);
+            if(isConnected){
+                trace_handler("start_ice has connected peer addr:" +addr.first +":"+to_string(addr.second) + "; uid="+to_string(uid));
+                on_ice_succ(addr.first, addr.second);
+            }else{
+                std::cout << "server: start_ice addr: " << addr.first<< ":"<< addr.second << std::endl;
+                server.tryConnect(addr.first, addr.second);
+                _ice_addr_list.push_back(addr);
+            }
+        }
+
+    }
+
+    void stopIce(){
+        if(isIceing()){
+            trace_handler("stopIce ");
+
+            server.closeConnectingPeer();
+            vector<pair<string, unsigned short>> empty;
+            std::swap( _ice_addr_list, empty);
+            _ice_start = 0;
+        }
+    }
+
+    bool isIceing(){
+        return !_ice_addr_list.empty() || _ice_start > 0; ;
+    }
+
+    void clearPeers(){
+        trace_handler("clearPeers ");
+        server.clear_peers();
+    }
 };
 
